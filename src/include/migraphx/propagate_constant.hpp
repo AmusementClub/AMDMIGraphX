@@ -38,7 +38,7 @@ struct module;
  */
 struct MIGRAPHX_EXPORT propagate_constant
 {
-    std::unordered_set<std::string> skip_ops = {};
+    std::unordered_set<std::string> skip_ops = {"unpack_int4"};
     std::string name() const { return "propagate_constant"; }
     void apply(module& m) const;
 };
