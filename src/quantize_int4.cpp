@@ -55,7 +55,7 @@ static void int4_quantize_module(module& m)
         auto inputs = ins->inputs();
         std::transform(inputs.begin(), inputs.end(), inputs.begin(), [&](auto inp) {
             auto sh = inp->get_shape();
-            if(sh.broadcasted() || sh.scalar())
+            if(sh.broadcasted())
                 return inp;
             auto input_type = sh.type();
             if(input_type != shape::float_type and input_type != shape::half_type)
@@ -67,21 +67,29 @@ static void int4_quantize_module(module& m)
             if(not inp->can_eval())
                 return inp;
 
-            auto scale = m.add_literal(literal({s.type()}, {1.0f}));
-            scale      = // fix scale and zero point later..
-                m.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", lens}}), scale);
+            std::vector<float> val;
+            inp->eval().visit([&](auto in_data) { val.assign(in_data.begin(), in_data.end()); });
+            auto [min, max] = std::minmax_element(val.begin(), val.end());
+            *min            = *min > 0 ? 0 : *min;
+            *max            = *max < 0 ? 0 : *max;
+            float fscale4   = (*max - *min) / 15; // INT4 range is [0-15]
+            int zp4         = float_equal(fscale4, 0) ? 0 : std::round(-*min / fscale4);
 
-            auto zp = m.add_literal(literal{{shape::uint8_type}, {0}});
+            auto scale = m.add_literal(literal({s.type()}, {fscale4}));
+            scale =
+                m.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", lens}}), scale);
+            auto zp = m.add_literal(literal{{shape::uint8_type}, {zp4}});
             zp = m.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", lens}}), zp);
             auto q_in = m.insert_instruction(ins, make_op("quantizelinear"), inp, scale, zp);
+
             auto pk   = m.insert_instruction(ins, make_op("pack_int4", {{"axis", -1}}), q_in);
             auto unpk = m.insert_instruction(ins, make_op("unpack_int4", {{"axis", -1}}), pk);
 
-            auto dq_scale = m.add_literal(literal({s.type()}, {1.0}));
+            auto dq_scale = m.add_literal(literal({s.type()}, {fscale4}));
             dq_scale      = m.insert_instruction(
                 ins, make_op("multibroadcast", {{"out_lens", lens}}), dq_scale);
 
-            auto dq_zp = m.add_literal(literal{{shape::uint8_type}, {0}});
+            auto dq_zp = m.add_literal(literal{{shape::uint8_type}, {zp4}});
             dq_zp =
                 m.insert_instruction(ins, make_op("multibroadcast", {{"out_lens", lens}}), dq_zp);
             auto dq_unpk =
