@@ -91,13 +91,14 @@ struct unpack_int4
                     int8_t val2 = val1;
 
                     // Step1: move the LSN to MSN:
-                    val1 <<= 4;
+                    val1 <<= 4; // NOLINT(hicpp-signed-bitwise)
+
                     // Step2: the sign bit is copied in a right signed-shift:
-                    val1 >>= 4;
+                    val1 >>= 4; // NOLINT(hicpp-signed-bitwise)
                     out[data_idx] = val1;
 
                     data_idx[axis] += 1;
-                    val2 >>= 4;
+                    val2 >>= 4; // NOLINT(hicpp-signed-bitwise)
                     out[data_idx] = val2;
                 }
                 else

@@ -86,37 +86,37 @@ struct pack_int4
         visit_all(result, input)([&](auto out, auto inp) {
             par_for(output_shape.elements(), [&](auto i) {
                 using type = typename decltype(inp)::value_type;
+                type min_4bit; // clip min value
+                type max_4bit; // clip max value
+
                 if constexpr(std::is_signed<type>{})
                 {
-                    const int8_t min_4bit  = -8; // clip min value
-                    const int8_t max_4bit  = 7;  // clip max value
-                    auto data_idx          = output_shape.multi(i);
-                    auto in_data_multi_idx = data_idx;
-                    in_data_multi_idx[axis] *= 2;
-                    int8_t val1 = inp[in_data_multi_idx];
-                    val1        = std::min(std::max(val1, min_4bit), max_4bit); // clip
-
-                    in_data_multi_idx[axis] += 1;
-                    int8_t val2 = inp[in_data_multi_idx];
-                    val2        = std::min(std::max(val2, min_4bit), max_4bit); // clip
-
-                    out[i] = (val2 << 4) | (val1 & 0xf); // pack
+                    min_4bit = -8;
+                    max_4bit = 7;
                 }
                 else
                 {
-                    const uint8_t max_4bit = 15; // clip max value
-                    auto data_idx          = output_shape.multi(i);
-                    auto in_data_multi_idx = data_idx;
-                    in_data_multi_idx[axis] *= 2;
-                    uint8_t val1 = inp[in_data_multi_idx];
-                    val1         = std::min(val1, max_4bit); // clip
-
-                    in_data_multi_idx[axis] += 1;
-                    uint8_t val2 = inp[in_data_multi_idx];
-                    val2         = std::min(val2, max_4bit); // clip
-
-                    out[i] = (val2 << 4) | (val1 & 0xf); // pack
+                    min_4bit = 0;
+                    max_4bit = 15;
                 }
+
+                auto data_idx          = output_shape.multi(i);
+                auto in_data_multi_idx = data_idx;
+                in_data_multi_idx[axis] *= 2;
+                type val1 = inp[in_data_multi_idx];
+                in_data_multi_idx[axis] += 1;
+                type val2 = inp[in_data_multi_idx];
+
+                // clip:
+                val1 = std::min(std::max(val1, min_4bit), max_4bit);
+                val2 = std::min(std::max(val2, min_4bit), max_4bit);
+
+                // pack:
+                // the bit operations are forced into uint8_t mode,
+                // and this would avoid compiler warnings as well.
+                uint8_t val_ui8_1 = static_cast<uint8_t>(val1);
+                uint8_t val_ui8_2 = static_cast<uint8_t>(val2);
+                out[i]            = (val_ui8_2 << 4) | (val_ui8_1 & 0xf);
             });
         });
         return result;

@@ -109,6 +109,8 @@ TEST_CASE(pack_uint4_axis_0)
 
 TEST_CASE(pack_uint4_nchw)
 {
+    // input values >= 0x10 would be clipped to 0xf (the maximum for uint4)
+    // As seen in the bottom half of the expected results (gold) below.
     migraphx::program p;
     auto* mm = p.get_main_module();
     migraphx::shape s{migraphx::shape::uint8_type, {1, 2, 4, 4}};
@@ -116,6 +118,7 @@ TEST_CASE(pack_uint4_nchw)
         migraphx::literal{s, {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
                               0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
                               0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F}});
+
     mm->add_instruction(migraphx::make_op("pack_int4", {{"axis", -1}}), l0);
     p.compile(migraphx::make_target("ref"));
     auto result = p.eval({}).back();
