@@ -91,7 +91,11 @@ struct unpack_int4
                     int8_t val2 = val1;
 
                     // Step1: move the LSN to MSN:
-                    val1 <<= 4; // NOLINT(hicpp-signed-bitwise)
+                    // However avoid doing a left shift of signed quantity
+                    // due to its possible run time error.
+                    uint8_t u_tmp = static_cast<uint8_t>(val1);
+                    u_tmp <<= 4;
+                    val1 = static_cast<int8_t>(u_tmp);
 
                     // Step2: the sign bit is copied in a right signed-shift:
                     val1 >>= 4; // NOLINT(hicpp-signed-bitwise)

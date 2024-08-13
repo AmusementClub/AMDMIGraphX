@@ -116,7 +116,7 @@ struct pack_int4
                 // and this would avoid compiler warnings as well.
                 uint8_t val_ui8_1 = static_cast<uint8_t>(val1);
                 uint8_t val_ui8_2 = static_cast<uint8_t>(val2);
-                out[i]            = (val_ui8_2 << 4) | (val_ui8_1 & 0xf);
+                out[i] = (val_ui8_2 << 4) | (val_ui8_1 & 0xf); // NOLINT(hicpp-signed-bitwise)
             });
         });
         return result;
