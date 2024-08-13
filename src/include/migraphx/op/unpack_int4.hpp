@@ -94,7 +94,7 @@ struct unpack_int4
                     // However avoid doing a left shift of signed quantity
                     // due to its possible run time error.
                     uint8_t u_tmp = static_cast<uint8_t>(val1);
-                    u_tmp <<= 4;
+                    u_tmp <<= 4; // NOLINT(hicpp-signed-bitwise)
                     val1 = static_cast<int8_t>(u_tmp);
 
                     // Step2: the sign bit is copied in a right signed-shift:
@@ -109,9 +109,9 @@ struct unpack_int4
                 {
                     // unpacking of 2 unsigned nibbles:
                     uint8_t val   = inp[i];
-                    out[data_idx] = val & 0xf;
+                    out[data_idx] = val & 0xf; // NOLINT(hicpp-signed-bitwise)
                     data_idx[axis] += 1;
-                    out[data_idx] = val >> 4;
+                    out[data_idx] = val >> 4; // NOLINT(hicpp-signed-bitwise)
                 }
             });
         });
