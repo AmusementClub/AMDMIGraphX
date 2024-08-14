@@ -110,6 +110,7 @@ struct unpack_int4
                     // unpacking of 2 unsigned nibbles:
                     uint8_t val   = inp[i];
                     out[data_idx] = val & 0xf; // NOLINT(hicpp-signed-bitwise)
+
                     data_idx[axis] += 1;
                     out[data_idx] = val >> 4; // NOLINT(hicpp-signed-bitwise)
                 }
