@@ -35,6 +35,7 @@
 #include <migraphx/op/dot.hpp>
 #include <migraphx/op/quant_dot.hpp>
 #include <migraphx/register_op.hpp>
+#include <migraphx/eliminate_identity.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -150,7 +151,7 @@ struct match_find_quantizable_ops
             return;
 
         // Propagate q1 and q2 through any broadcasts and transposes before qop
-        auto qop_args  = qop->inputs();
+        auto qop_args      = qop->inputs();
         bool is_fp16_model = false;
         if(dq1->get_shape().type() != qop->get_shape().type() and
            qop->get_shape().type() == migraphx::shape::half_type)
@@ -377,6 +378,17 @@ bool is_same_scale_zero(instruction_ref a, instruction_ref b)
     return is_same_value(a->inputs().at(2), b->inputs().at(2));
 }
 
+// when an unpack instruction is inserted before an input, its original input was packed int4/uint4
+bool is_input_int4(instruction_ref a)
+{
+    auto&& inp = a->inputs();
+    if(inp.size() > 1 and inp[1]->name() == "unpack_int4")
+        return true;
+    if(inp.size() > 2 and inp[2]->name() == "unpack_int4")
+        return true;
+    return false;
+}
+
 void remove_qdq_pairs(module& m)
 {
     for(auto ins : iterator_for(m))
@@ -395,10 +407,32 @@ void remove_qdq_pairs(module& m)
         }
     }
 }
+
+void add_pack_unpack(module& m)
+{
+    for(auto ins : iterator_for(m))
+    {
+        if(ins->name() != "dequantizelinear")
+            continue;
+        auto args = ins->inputs();
+        for(auto&& arg : args)
+        {
+            if((arg->name() == "quantizelinear") and is_input_int4(arg))
+            {
+                auto pk   = m.insert_instruction(ins, make_op("pack_int4"), arg);
+                auto unpk = m.insert_instruction(ins, make_op("unpack_int4"), pk);
+                instruction::replace_argument(ins, arg, unpk);
+            }
+        }
+    }
+}
+
 } // namespace
 
 void simplify_qdq::apply(module& m) const
 {
+    migraphx::run_passes(m, {migraphx::eliminate_identity{}});
+    add_pack_unpack(m);
     match::find_matches(m, match_find_quantizable_ops{});
     migraphx::run_passes(m, {migraphx::dead_code_elimination{}});
     remove_qdq_pairs(m);
