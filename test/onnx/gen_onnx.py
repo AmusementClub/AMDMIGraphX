@@ -5609,7 +5609,7 @@ def instance_norm_val_3d_test():
 
 @onnx_test()
 def int4_const_identity_qdq_test():
-    zp_values = np.array([[1, 2, 3, 4], [-1, -2, -3, -4]])
+    zp_values = np.array([[0, 0, 0, 0], [0, 0, 0, 0]])
     x_t = helper.make_tensor(name='i_x',
                            data_type=TensorProto.INT4,
                            dims=zp_values.shape,
@@ -5627,7 +5627,7 @@ def int4_const_identity_qdq_test():
                            dims=data_values.shape,
                            vals=data_values.flatten().astype(np.float16))
 
-    sc_values = np.array([[1, 1, 1, 1], [1, 1, 1, 1]])
+    sc_values = np.array([[0.5, 0.25, 0.5, 0.125], [0.25, 0.5, 0.5, 0.25]])
     sc_t = helper.make_tensor(name='sc_q',
                            data_type=TensorProto.FLOAT16,
                            dims=sc_values.shape,
@@ -5639,11 +5639,11 @@ def int4_const_identity_qdq_test():
         outputs=['q_y'],
     )
 
-    sc_values_2 = np.array([[1, 1, 1, 1], [1, 1, 1, 1]])
+    # dequantizer uses same scale values as the quantizer:
     sc_2_t = helper.make_tensor(name='sc_dq',
                            data_type=TensorProto.FLOAT16,
-                           dims=sc_values_2.shape,
-                           vals=sc_values_2.flatten().astype(np.float16))
+                           dims=sc_values.shape,
+                           vals=sc_values.flatten().astype(np.float16))
 
     dq_node = onnx.helper.make_node(
         'DequantizeLinear',
