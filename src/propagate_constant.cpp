@@ -38,7 +38,7 @@ MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_TRACE_PROPAGATE_CONSTANT)
 
 bool skip_propagate(instruction_ref ins)
 {
-    if(ins->name() == "contiguous" or ins->name() == "dequantizelinear")
+    if(ins->name() == "contiguous")
         return skip_propagate(ins->inputs().front());
 
     auto&& s = ins->get_shape();
