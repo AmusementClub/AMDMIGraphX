@@ -35,7 +35,6 @@
 #include <migraphx/op/dot.hpp>
 #include <migraphx/op/quant_dot.hpp>
 #include <migraphx/register_op.hpp>
-#include <migraphx/eliminate_identity.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -431,7 +430,6 @@ void add_pack_unpack(module& m)
 
 void simplify_qdq::apply(module& m) const
 {
-    migraphx::run_passes(m, {migraphx::eliminate_identity{}});
     add_pack_unpack(m);
     match::find_matches(m, match_find_quantizable_ops{});
     migraphx::run_passes(m, {migraphx::dead_code_elimination{}});
