@@ -21,23 +21,6 @@ jobs:
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Setup Ninja
-      run: pip install ninja
-
-    - name: Cache HIP SDK
-      id: cache-hip
-      uses: actions/cache@v4
-      with:
-        path: C:\Program Files\AMD\ROCM
-        key: ${{ runner.os }}-rocm-6.1.2
-
-    - name: Setup HIP
-      if: steps.cache-hip.outputs.cache-hit != 'true'
-      shell: pwsh
-      run: |
-        curl -s -o hip_installer.exe -L https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q3-WinSvr2022-For-HIP.exe
-        Start-Process hip_installer.exe -ArgumentList '-install' -NoNewWindow -Wait
-
     - name: Create depend folder
       run: mkdir depend
 
@@ -67,5 +50,30 @@ jobs:
         cmake --install build --prefix ../install
 
     - name: Setup SQLite3 library
-      run: vcpkg install sqlite3[core]:x64-windows --x-install-root="%cd%/../install"
+      run: vcpkg install sqlite3[core]:x64-windows
+
+    - name: Setup MessagePack library
+      run: |
+        cd depend
+        git clone https://github.com/msgpack/msgpack-c
+        cd msgpack-c
+        git checkout cpp-3.3.0
+        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D MSGPACK_BUILD_TESTS=OFF -D MSGPACK_BUILD_EXAMPLES=OFF -Wno-dev
+        cmake --build build --verbose
+        cmake --install build
+        xcopy include\ ..\install /s /f /y
+
+    - name: Cache HIP SDK
+      id: cache-hip
+      uses: actions/cache@v4
+      with:
+        path: C:\Program Files\AMD\ROCM
+        key: ${{ runner.os }}-rocm-6.1.2
+
+    - name: Setup HIP
+      if: steps.cache-hip.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        curl -s -o hip_installer.exe -L https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q3-WinSvr2022-For-HIP.exe
+        Start-Process hip_installer.exe -ArgumentList '-install' -NoNewWindow -Wait
 
