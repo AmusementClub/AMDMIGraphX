@@ -57,3 +57,15 @@ jobs:
         cmake -S . -B build -D CMAKE_PREFIX_PATH="%cd%/../install"
         cmake --install build --prefix ../install
 
+    - name: Setup json library
+      run: |
+        cd depend
+        git clone https://github.com/nlohmann/json
+        cd json
+        git checkout v3.8.0
+        cmake -S . -B build -D BUILD_TESTING=OFF -Wno-dev
+        cmake --install build --prefix ../install
+
+    - name: Setup SQLite3 library
+      run: vcpkg install sqlite3[core]:x64-windows --x-install-root="%cd%/../install"
+
