@@ -61,7 +61,27 @@ jobs:
         cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D MSGPACK_BUILD_TESTS=OFF -D MSGPACK_BUILD_EXAMPLES=OFF -Wno-dev
         cmake --build build --verbose
         cmake --install build
-        xcopy include\ ..\install /s /f /y
+        xcopy include\ ..\install\include\ /s /f /y
+
+    - name: Setup Protobuf library
+      run: |
+        cd depend
+        git clone https://github.com/google/protobuf
+        cd protobuf
+        git checkout v3.21.12
+        cmake -S cmake -B build_rel -G Ninja -D CMAKE_BUILD_TYPE=Release -D protobuf_MSVC_STATIC_RUNTIME=OFF -D protobuf_BUILD_TESTS=OFF -Wno-dev
+        cmake --build build_rel --verbose
+        cmake --install build_rel --prefix ../install
+
+    - name: Setup rocMLIR library
+      run: |
+        cd depend
+        git clone https://github.com/ROCm/rocMLIR
+        cd rocMLIR
+        git checkout 8f51edbff77499fbd4d14e38b3efda1d210f6f6e
+        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D CMAKE_PREFIX_PATH="%cd%/../install" -D BUILD_FAT_LIBROCKCOMPILER=ON -Wno-dev
+        cmake --build build --verbose
+        cmake --install build --prefix ../install
 
     - name: Cache HIP SDK
       id: cache-hip
@@ -76,4 +96,23 @@ jobs:
       run: |
         curl -s -o hip_installer.exe -L https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q3-WinSvr2022-For-HIP.exe
         Start-Process hip_installer.exe -ArgumentList '-install' -NoNewWindow -Wait
+
+    - name: Setup MIGraphX
+      run: cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D CMAKE_C_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang.exe" -D CMAKE_CXX_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang++.exe" -D CMAKE_PREFIX_PATH="%cd%/depend/install;C:/vcpkg/packages/sqlite3_x64-windows" -D BUILD_TESTING=OFF -D HIP_PLATFORM=amd -D GPU_TARGETS="gfx1030;gfx1100;gfx1101;gfx1102" -Wno-dev
+
+    - name: Build MIGraphX
+      run: cmake --build build --verbose
+
+    - name: Install MIGraphX
+      run: cmake --install build --prefix migraphx-windows
+
+    - name: Show
+      run: ls -R migraphx-windows
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: migraphx-windows
+        retention-days: 1
+        path: migraphx-windows
 
