@@ -38,3 +38,22 @@ jobs:
         curl -s -o hip_installer.exe -L https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q3-WinSvr2022-For-HIP.exe
         Start-Process hip_installer.exe -ArgumentList '-install' -NoNewWindow -Wait
 
+    - name: Create depend folder
+      run: mkdir depend
+
+    - name: Setup ROCm CMake modules
+      run: |
+        cd depend
+        git clone https://github.com/ROCm/rocm-cmake --depth 1
+        cd rocm-cmake
+        cmake -S . -B build
+        cmake --install build --prefix ../install
+
+    - name: Setup Half library
+      run: |
+        cd depend
+        git clone https://github.com/ROCm/half --depth 1
+        cd half
+        cmake -S . -B build -D CMAKE_PREFIX_PATH="%cd%/../install"
+        cmake --install build --prefix ../install
+
