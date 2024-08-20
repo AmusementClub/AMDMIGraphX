@@ -21,10 +21,19 @@ jobs:
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
 
+    - name: Cache dependencies
+      id: cache-depend
+      uses: actions/cache@v4
+      with:
+        path: D:/a/AMDMIGraphX/AMDMIGraphX/depend/install
+        key: ${{ runner.os }}-depend
+
     - name: Create depend folder
+      if: steps.cache-depend.outputs.cache-hit != 'true'
       run: mkdir depend
 
     - name: Setup ROCm CMake modules
+      if: steps.cache-depend.outputs.cache-hit != 'true'
       run: |
         cd depend
         git clone https://github.com/ROCm/rocm-cmake --depth 1
@@ -33,6 +42,7 @@ jobs:
         cmake --install build --prefix ../install
 
     - name: Setup Half library
+      if: steps.cache-depend.outputs.cache-hit != 'true'
       run: |
         cd depend
         git clone https://github.com/ROCm/half --depth 1
@@ -41,6 +51,7 @@ jobs:
         cmake --install build --prefix ../install
 
     - name: Setup json library
+      if: steps.cache-depend.outputs.cache-hit != 'true'
       run: |
         cd depend
         git clone https://github.com/nlohmann/json
@@ -54,6 +65,7 @@ jobs:
       run: vcpkg install sqlite3[core]:x64-windows-static
 
     - name: Setup MessagePack library
+      if: steps.cache-depend.outputs.cache-hit != 'true'
       run: |
         cd depend
         git clone https://github.com/msgpack/msgpack-c
@@ -68,6 +80,7 @@ jobs:
         xcopy include\ ..\install\include\ /s /f /y
 
     - name: Setup Protobuf library
+      if: steps.cache-depend.outputs.cache-hit != 'true'
       run: |
         cd depend
         git clone https://github.com/google/protobuf
@@ -79,6 +92,7 @@ jobs:
         cmake --install build_rel --prefix ../install
 
     - name: Setup rocMLIR library
+      if: steps.cache-depend.outputs.cache-hit != 'true'
       run: |
         cd depend
         git clone https://github.com/ROCm/rocMLIR
