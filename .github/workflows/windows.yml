@@ -45,22 +45,26 @@ jobs:
         cd depend
         git clone https://github.com/nlohmann/json
         cd json
+        :: follows https://github.com/AmusementClub/AMDMIGraphX/blob/develop/requirements.txt
         git checkout v3.8.0
         cmake -S . -B build -D BUILD_TESTING=OFF -Wno-dev
         cmake --install build --prefix ../install
 
     - name: Setup SQLite3 library
-      run: vcpkg install sqlite3[core]:x64-windows
+      run: vcpkg install sqlite3[core]:x64-windows-static
 
     - name: Setup MessagePack library
       run: |
         cd depend
         git clone https://github.com/msgpack/msgpack-c
         cd msgpack-c
+        :: follows https://github.com/AmusementClub/AMDMIGraphX/blob/develop/requirements.txt
         git checkout cpp-3.3.0
-        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D MSGPACK_BUILD_TESTS=OFF -D MSGPACK_BUILD_EXAMPLES=OFF -Wno-dev
+        :: patch for cmake msvc rt flag
+        python -c "f=open('CMakeLists.txt');lines=f.readlines();lines[0]='cmake_minimum_required(VERSION 3.15)\n';f.close();f=open('CMakeLists.txt','w');f.writelines(lines);f.close()"
+        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D MSGPACK_BUILD_TESTS=OFF -D MSGPACK_BUILD_EXAMPLES=OFF -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -Wno-dev
         cmake --build build --verbose
-        cmake --install build
+        cmake --install build --prefix ../install
         xcopy include\ ..\install\include\ /s /f /y
 
     - name: Setup Protobuf library
@@ -68,8 +72,9 @@ jobs:
         cd depend
         git clone https://github.com/google/protobuf
         cd protobuf
+        :: follows onnx's recommended version
         git checkout v3.21.12
-        cmake -S cmake -B build_rel -G Ninja -D CMAKE_BUILD_TYPE=Release -D protobuf_MSVC_STATIC_RUNTIME=OFF -D protobuf_BUILD_TESTS=OFF -Wno-dev
+        cmake -S . -B build_rel -G Ninja -D CMAKE_BUILD_TYPE=Release -D protobuf_BUILD_TESTS=OFF -D protobuf_MSVC_STATIC_RUNTIME=ON -Wno-dev
         cmake --build build_rel --verbose
         cmake --install build_rel --prefix ../install
 
@@ -78,8 +83,9 @@ jobs:
         cd depend
         git clone https://github.com/ROCm/rocMLIR
         cd rocMLIR
+        :: follows https://github.com/AmusementClub/AMDMIGraphX/blob/develop/requirements.txt
         git checkout 8f51edbff77499fbd4d14e38b3efda1d210f6f6e
-        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D CMAKE_PREFIX_PATH="%cd%/../install" -D BUILD_FAT_LIBROCKCOMPILER=ON -Wno-dev
+        cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D CMAKE_PREFIX_PATH="%cd%/../install" -D BUILD_FAT_LIBROCKCOMPILER=ON -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -Wno-dev
         cmake --build build --verbose
         cmake --install build --prefix ../install
 
@@ -98,7 +104,17 @@ jobs:
         Start-Process hip_installer.exe -ArgumentList '-install' -NoNewWindow -Wait
 
     - name: Setup MIGraphX
-      run: cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D CMAKE_C_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang.exe" -D CMAKE_CXX_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang++.exe" -D CMAKE_PREFIX_PATH="%cd%/depend/install;C:/vcpkg/packages/sqlite3_x64-windows" -D BUILD_TESTING=OFF -D HIP_PLATFORM=amd -D GPU_TARGETS="gfx1030;gfx1100;gfx1101;gfx1102" -Wno-dev
+      run: cmake -S . -B build -G Ninja -LA
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_C_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang.exe"
+        -D CMAKE_CXX_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang++.exe"
+        -D CMAKE_PREFIX_PATH="%cd%/depend/install;C:/vcpkg/packages/sqlite3_x64-windows"
+        -D BUILD_TESTING=OFF
+        -D HIP_DIR="C:/Program Files/AMD/ROCm/6.1/lib/cmake/hip"
+        -D HIP_PLATFORM=amd
+        -D GPU_TARGETS="gfx1030;gfx1100;gfx1101;gfx1102"
+        -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+        -Wno-dev
 
     - name: Build MIGraphX
       run: cmake --build build --verbose
