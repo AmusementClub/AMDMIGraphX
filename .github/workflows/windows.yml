@@ -138,22 +138,22 @@ jobs:
 
     - name: Install MIGraphX
       run: |
-        cmake --install build --prefix migraphx-windows
-        xcopy build\src\include\migraphx\version.h install\include /f /y
+        cmake --install build --prefix migraphx
+        xcopy build\src\include\migraphx\version.h migraphx\include\migraphx /f /y
 
     - name: Show
-      run: ls -R migraphx-windows
+      run: ls -R migraphx
 
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: migraphx-windows
+        name: migraphx-win64
         retention-days: 1
-        path: migraphx-windows
+        path: migraphx
 
     - name: Package
       shell: pwsh
-      run: Compress-Archive migraphx-windows -DestinationPath migraphx-win64.zip
+      run: Compress-Archive migraphx -DestinationPath migraphx-win64.zip
 
     - name: Get description
       shell: bash
