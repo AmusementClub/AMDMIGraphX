@@ -137,7 +137,9 @@ jobs:
       run: cmake --build build --verbose
 
     - name: Install MIGraphX
-      run: cmake --install build --prefix migraphx-windows
+      run: |
+        cmake --install build --prefix migraphx-windows
+        xcopy build\src\include\migraphx\version.h install\include /f /y
 
     - name: Show
       run: ls -R migraphx-windows
