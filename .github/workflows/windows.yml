@@ -15,7 +15,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         # develop
-        ref: 9cf49f92cf529aa66f8d9735dcb9da6e9e28101d
+        ref: 6acc1f957bab2d2b23b3adffccd29f7e10178986
         fetch-depth: 0
 
     - name: Setup MSVC
@@ -101,7 +101,7 @@ jobs:
         git clone https://github.com/ROCm/rocMLIR
         cd rocMLIR
         :: follows https://github.com/AmusementClub/AMDMIGraphX/blob/develop/requirements.txt
-        git checkout 26c8d17e70db4690da8db5ea60dab3d271c82c54
+        git checkout 13065c4b3a216e1b13dfb8f746b8a0d421f124e8
         cmake -S . -B build -G Ninja -D CMAKE_BUILD_TYPE=Release -D CMAKE_PREFIX_PATH="%cd%/../install" -D BUILD_FAT_LIBROCKCOMPILER=ON -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -Wno-dev
         cmake --build build
         cmake --install build --prefix ../install
@@ -111,26 +111,26 @@ jobs:
       uses: actions/cache@v4
       with:
         path: C:\Program Files\AMD\ROCM
-        key: ${{ runner.os }}-rocm-6.1.2
+        key: ${{ runner.os }}-rocm-6.2.4
 
     - name: Setup HIP
       if: steps.cache-hip.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
-        curl -s -o hip_installer.exe -L https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q3-WinSvr2022-For-HIP.exe
+        curl -s -o hip_installer.exe -L https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q4-WinSvr2022-For-HIP.exe
         Start-Process hip_installer.exe -ArgumentList '-install' -NoNewWindow -Wait
 
     - name: Setup MIGraphX
       run: cmake -S . -B build -G Ninja -LA -Wno-dev
         -D CMAKE_BUILD_TYPE=Release
-        -D CMAKE_C_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang.exe"
-        -D CMAKE_CXX_COMPILER="C:/Program Files/AMD/ROCm/6.1/bin/clang++.exe"
+        -D CMAKE_C_COMPILER="C:/Program Files/AMD/ROCm/6.2/bin/clang.exe"
+        -D CMAKE_CXX_COMPILER="C:/Program Files/AMD/ROCm/6.2/bin/clang++.exe"
         -D CMAKE_PREFIX_PATH="%cd%/depend/install;C:/vcpkg/packages/sqlite3_x64-windows-static"
         -D BUILD_TESTING=OFF
-        -D hip_DIR="C:/Program Files/AMD/ROCm/6.1/lib/cmake/hip"
-        -D hiprtc_DIR="C:/Program Files/AMD/ROCm/6.1/lib/cmake/hiprtc"
+        -D hip_DIR="C:/Program Files/AMD/ROCm/6.2/lib/cmake/hip"
+        -D hiprtc_DIR="C:/Program Files/AMD/ROCm/6.2/lib/cmake/hiprtc"
         -D HIP_PLATFORM=amd
-        -D GPU_TARGETS="gfx1030;gfx1100;gfx1101;gfx1102"
+        -D GPU_TARGETS="gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102"
         -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
     - name: Build MIGraphX
